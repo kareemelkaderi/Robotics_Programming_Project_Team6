@@ -8,6 +8,7 @@ L1, L2, L3, L4 = 0.14, 0.13, 0.12, 0.1
 q1, q2, q3,q4 = sp.symbols('q1 q2 q3 q4')
 vx, vy, vz = sp.symbols('vx vy vz')
 time = [10.0,0.1]
+prevZ = 0
 def sysCall_init():
     sim = require('sim')
     self.target_position = -90 * (3.14159/180)
@@ -61,18 +62,19 @@ def sysCall_actuation():
             sim.setObjectPosition(final_Obj, EEHandle, relative_position)
             print("Box gripped successfully.")
     else:
+        time_threshold = 20 
         placing_start_time = sim.getSimulationTime()
         EEHandle1=sim.getObject("../Grip_respondable")
         init_pos1= sim.getObjectPosition(EEHandle,sim.handle_world)
-        Table= sim.getObject("../../highTable")
+        Table= sim.getObject("../../Basket")
         #final_pos1= sim.getObjectPosition(Table,sim.handle_world)
         final_pos1 = (-1.250,1.90001, 1.100)
         traj1 = task_traj(init_pos1, final_pos1,time[0],time[1])
         IPK = inverse_kinematics_trig(traj1[0],traj1[1],traj1[2])
         print(IPK)
-        sim.setJointTargetPosition(position1,IPK[0]*time[1]/time[0])
-        sim.setJointTargetPosition(position3,-IPK[2]*time[1]/time[0])
-        sim.setJointTargetPosition(position4,IPK[3]*time[1]/time[0])
+        sim.setJointTargetPosition(position1,IPK[0]*time[1]/time_threshold)
+        sim.setJointTargetPosition(position3,-IPK[2]*time[1]/time_threshold)
+        sim.setJointTargetPosition(position4,IPK[3]*time[1]/time_threshold)
         time[1]+=0.1
         current_time = sim.getSimulationTime()
         EE_pos = sim.getObjectPosition(EEHandle, sim.handle_world)
@@ -81,8 +83,7 @@ def sysCall_actuation():
         print(f"Current Time: {current_time}, Placing Start Time: {placing_start_time}")
         print(f"EE Position: {EE_pos}, Distance to Goal: {distance_to_goal}")
 
-        time_threshold = 9.5  
-        position_threshold = 0.6
+        position_threshold = 0.25
         if current_time >= time_threshold and distance_to_goal < position_threshold:
             sim.setObjectParent(final_Obj, -1)  
             print("Box placed successfully on the table.")
@@ -261,12 +262,12 @@ def inverse_kinematics_trig(X, Y, Z):
     distance32=sim.getObjectPosition(self.position3,position2)
     distance43=sim.getObjectPosition(position4,self.position3)
     distance54=sim.getObjectPosition(EEHandle,position4)
-    L1=math.sqrt(distance21[0]**2+distance21[2]**2)
-    L2=math.sqrt(distance32[0]**2+distance32[2]**2)
-    L3=math.sqrt(distance43[0]**2+distance43[2]**2)
-    L4=math.sqrt(distance54[0]**2+distance54[2]**2)
-    d = math.sqrt(X**2 + Y**2)
-    cos_theta2 = (L1**2 + L2**2 - d**2) / (2 * L1 * L2)
+    L1=math.sqrt(distance21[0]*2+distance21[2]*2)
+    L2=math.sqrt(distance32[0]*2+distance32[2]*2)
+    L3=math.sqrt(distance43[0]*2+distance43[2]*2)
+    L4=math.sqrt(distance54[0]*2+distance54[2]*2)
+    d = math.sqrt(X*2 + Y*2)
+    cos_theta2 = (L1*2 + L22 - d*2) / (2 * L1 * L2)
     print(cos_theta2)
     cos_theta2 = np.clip(cos_theta2, -1, 1)  
     theta2 = np.arccos(cos_theta2)
